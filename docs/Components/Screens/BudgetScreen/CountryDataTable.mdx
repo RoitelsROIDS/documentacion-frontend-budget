@@ -1,0 +1,104 @@
+# CountryDataTable
+
+El componente **`CountryDataTable`** se utiliza para mostrar una tabla de datos con el top 10 de países con sus respectivos valores asociados en una columna específica **(Ingresos u Ocupación)**. El componente utiliza **material ui** para los componentes de interfaz de usuario, **i18n-iso-countries** para la traducción de nombres de países y códigos ISO, y **react-intl** para la traducción de nombres de países y mensajes.
+
+:::info
+Para editar cualquier estilo del componente **CountryDataTable**, debe realizarse desde el archivo de estilos **BudgetScreen.scss**.
+::: 
+
+## Importación de dependencias y recursos
+- El código hace uso de varios componentes de la biblioteca Material-UI. Estos componentes proporcionan la estructura y los estilos necesarios para construir las tablas de Ocupación e Ingresos.
+
+```bash
+<Paper> <TableContainer> <Table> <TableHead> <TableBody> <TableRow> <TableCell>
+```
+
+- Se importan los archivos **JSON de idioma (en.json y es.json)** para la traducción de nombres de países y se registran utilizando `registerLocale` de i18n-iso-countries para habilitar la traducción de nombres de países en diferentes idiomas.
+
+```tsx title="/components/screens/BudgetScreen/CountryDataTable.tsx" 
+import * as i18nIsoCountries from 'i18n-iso-countries'
+import { getName } from 'i18n-iso-countries'
+import * as enJson from 'i18n-iso-countries/langs/en.json'
+import * as esJson from 'i18n-iso-countries/langs/es.json'
+
+i18nIsoCountries.registerLocale(enJson)
+i18nIsoCountries.registerLocale(esJson)
+```
+
+- Se importa el componente **`InfoPopover`** que se utiliza para mostrar información adicional en forma de un popover en la tabla.
+
+```tsx title="/components/screens/BudgetScreen/CountryDataTable.tsx" 
+import InfoPopover from '../../screens/BudgetScreen/PopupInfoCharts'
+```
+
+## Lógica y representación de las tablas
+
+- Se define el tipo `Props` que especifica la estructura de las propiedades esperadas por el componente, en este caso para las columas con los países y las columnas con los datos a mostrar.
+El tipo **Alpha2Code** se utiliza para representar el código de dos letras de un país y garantizar que se cumpla el formato correcto en los datos utilizados por el componente **`CountriesDataTable`**.
+
+
+```tsx title="/components/screens/BudgetScreen/CountryDataTable.tsx" 
+
+type Props = {
+    data: {
+        country: Alpha2Code
+        value: any
+    }[]
+    columnName: string
+}
+
+```
+
+- Se itera sobre los datos proporcionados **(data.slice(0, 10))** y se crea una fila para cada elemento, limitando la cantidad de filas a 10.
+Se declara dentro del bloque las funciones **`countryName`** y **`countryCode`** para obtener el nombre del país y el código de país utilizando las funciones **`getName`** y **`isoToCountryCode`** respectivamente.
+- El bloque **try y catch** se utiliza para manejar posibles errores que puedan ocurrir al obtener el nombre del país y el código de país a partir del código de dos letras proporcionado (row.country).
+
+```tsx title="/components/screens/BudgetScreen/CountryDataTable.tsx" 
+
+<TableBody>
+    {data.slice(0, 10).map((row) => {
+        let countryName, countryCode
+        try {
+            countryName = getName(row.country, locale, { select: 'official' })
+            countryCode = isoToCountryCode(row.country)
+        } catch (e) {
+            console.error(`Error getting country name or code for ${row.country}: ${e}`)
+            return null
+        }
+        if (!countryName) return null
+        return (
+            <StyledTableRow
+                key={row.country}
+                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                className="country-table-row"
+            >
+                <TableCell colSpan={1} align="left">
+                    <div className="country-table-row-flag">
+                        <img src={require(`flagpack-core/lib/flags/l/${countryCode}.svg`)} />
+                    </div>
+                </TableCell>
+                <TableCell colSpan={2} align="left">
+                    <div className="country-table-row-labels">
+                        <label>{row.country.toUpperCase()}</label>
+                        <span>{countryName}</span>
+                    </div>
+                </TableCell>
+                <TableCell colSpan={1} className="country-table-row-reservations-section" align="right">
+                    <div>{columnName === 'Revenue' ? `$ ${row.value}` : `${row.value}%`}</div>
+                </TableCell>
+            </StyledTableRow>
+        )
+    })}
+</TableBody>
+
+```
+
+
+
+
+
+
+
+
+
+

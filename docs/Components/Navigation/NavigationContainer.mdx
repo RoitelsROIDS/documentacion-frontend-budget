@@ -1,0 +1,69 @@
+# NavigationContainer
+
+Este componente se encarga de manejar la estructura y el comportamiento de la navegación en la interfaz de usuario. Proporciona una barra superior **(TopBar)**, una barra lateral **(SideBar)** y el contenido principal de la aplicación. La finalidad de este código es organizar
+y controlar la navegación y la apariencia de la interfaz de usuario, permitiendo la interacción con diferentes elementos y componentes de la aplicación.
+
+## TopBar y SideBar
+
+**NavigationContainer** establece una renderización condicional de los elementos TopBar, SideBar y el contenido principal, dependiendo del estado de la aplicación y del dispositivo utilizado 
+(a través del `hook useIsMobile` para determinar si la aplicación se está ejecutando en un dispositivo móvil, y según esta condición, se muestra o no la barra lateral).
+Además el componente utiliza el `context UserContext` para obtener información del usuario y verificar si el usuario está cargando o si la autenticación ha sido exitosa. Dependiendo de estas condiciones, se muestra el contenido principal o se devuelve null si no hay hijos definidos.
+
+```tsx title="/components/navigation/NavigationContainer.tsx" {1,4-6,11} showLineNumbers
+type Props = {
+    children?: JSX.Element
+}
+
+const NavigationContainer: FC<Props> = (props) => {
+    const { user, userLoading } = useContext(UserContext)
+    const [isSideBarOpen, setIsSideBarOpen] = useState<boolean>(false)
+    const isMobile = useIsMobile();
+    const onSideBarOpenToggle = () => {
+        setIsSideBarOpen((state) => !state)
+    }
+    const { children } = props
+    if (!children) return null
+
+    if (userLoading || !user) return children
+
+    return (
+        <>
+            <TopBar isSideBarOpen={isSideBarOpen} business={business} />
+            {!isMobile && <SideBar onToggleOpen={onSideBarOpenToggle} open={isSideBarOpen} business={business} />}
+            <div
+                className={classnames('main-content', {
+                    'open-sidebar': isSideBarOpen,
+                    'mobile': isMobile,
+                    'desktop': !isMobile
+                })}
+            >
+                {children}
+            </div>
+        </>
+    )
+}
+```
+
+## Import NavigationContainer
+
+El componente debe ser importado e implementado de manera global en la aplicación.
+
+```tsx title="/src/App.tsx"
+return (
+    <>
+        <CssBaseline />
+        <IntlProvider locale={locale} messages={loadLocaleData(locale)}>
+            <UserContext.Provider value={{ user: userInfo, userLoading, backendServices, locale, setLocale, loading, setLoading }}>
+                <BrowserRouter>
+                    <NavigationContainer>
+                        <Routes>
+                            <Route path="/" element={<PrivateRoute element={<BudgetScreen userInfo={userInfo} />} />} />
+                            <Route path="login" element={<LoginScreen />} />
+                        </Routes>
+                    </NavigationContainer>
+                </BrowserRouter>
+            </UserContext.Provider>
+        </IntlProvider>
+    </>
+)
+```

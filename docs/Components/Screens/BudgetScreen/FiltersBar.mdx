@@ -1,0 +1,468 @@
+# FiltersBar
+
+El componente **FiltersBar** esta compuesto por sub-componentes los cuales sirven para implementar filtros que le van a permitir a usuario filtrar y visualizar información de acuerdo con ciertos criterios.
+
+## Sub-componentes principales
+
+### Definición de types y props
+
+En primera instancia se declaran los types y filtros según los dispostivos (desktop o mobiles). Los `type` establecen una interfaz que define la estructura de un objeto que se utiliza para representar las propiedades (en este caso de un componente de filtro).
+Esto permite definir la estructura de las propiedades que se pasan a un componente de filtro y garantizar que se utilicen correctamente.
+
+```tsx title="/components/screens/BudgetScreen/FiltersBar.tsx" 
+// type para el componente final que va a ser exportado (el cual incluye los 3 filtros)
+type Props = {
+    onFilterChange: (filters: { period: string; propertyName: string; formOfSale: 'dorm' | 'room' | 'global'| 'apart' }) => void
+    applyFilters: () => void
+    actualFilters: { period: string; propertyName: string; formOfSale: 'dorm' | 'room' | 'global'| 'apart' }
+    properties?: Property[]
+    typologies?: Typology[]
+}
+
+// type utilizado para renderizar cada filtro individualmente
+type FilterProps = {
+    label: string
+    options: string[] | { value: string; label: string }[]
+    onChange?: (option: string) => void
+    value: string | { value: string; label: string }
+} 
+
+// type que define una estrutura específica dentro de CustomFilterProps
+type FilterOption = {
+    value: string
+    label: string
+}
+
+// type utilizado en el componente final junto al type Props (desktop)
+type CustomFilterProps = {
+    datesOptions: FilterOption[]
+    formOfSaleOptions: FilterOption[]
+}
+
+// type utilizado en el componente final junto al type Props (mobile)
+type CustomFilterPropsMobile = {
+    datesOptions: FilterOption[]
+    formOfSaleOptions: FilterOption[]
+    propertyNameOptions: FilterOption[]
+}
+
+```
+
+### Filter
+
+El componente **`Filter`** acepta ciertas propiedades **(FilterProps)**, las desestructura y las utiliza para configurar y renderizar un componente **Autocomplete** de Material-UI.
+- **`const { label, options, onChange, value, properties } = props`:** Filter desestructura las props pasadas al componente para acceder a sus valores individuales. 
+- **`const realValue = typeof value === 'string' ? { value, label: value } : value`:**  Aca se verifica si el tipo de value es una cadena (string). Si es una cadena, se crea un nuevo objeto con las propiedades value y label establecidas con los mismos valores. Si value no es una cadena, se asigna directamente a realValue. Esta línea se utiliza para asegurarse de que realValue siempre tenga una estructura específica, independientemente del tipo de value que se pase.
+- **`const realOptions = options.map((option) => (typeof option === 'string' ? { value: option, label: option } : option))`:** En esta constante se utiliza el método map para recorrer el array options. Para cada elemento en options, se verifica si el tipo de option es una cadena (string). Si es así, se crea un nuevo objeto con las propiedades value y label establecidas con los mismos valores. Si option no es una cadena, se asigna directamente a realOptions. Esto asegura que realOptions siempre tenga una estructura específica, independientemente del tipo de elementos que haya en options.
+
+```tsx title="/components/screens/BudgetScreen/FiltersBar.tsx" 
+const Filter: FC<FilterProps> = (props) => {
+const { label, options, onChange, value, properties } = props
+const realValue = typeof value === 'string' ? { value, label: value } : value
+const realOptions = options.map((option) => (typeof option === 'string' ? { value: option, label: option } : option))
+
+return (
+    <Autocomplete
+        disablePortal
+        value={realValue}
+        onChange={(event, select) => select && onChange && onChange(select.value)}
+        options={realOptions}
+        inputValue={realValue.label}
+        renderInput={(params) => <TextField variant="filled" {...params} label={label} />}
+        size="small"
+        className="top-bar-filter"
+    />
+    )
+}
+
+```
+
+### FilterMobile
+
+El componente **`FilterMobile`** que es una variante del componente **`Filter`** original, adaptado para su uso en una vista móvil. Introduce propiedades adicionales y estados locales para controlar el estado de apertura/cierre del componente en una vista.
+
+- **`const { label, options, onChange, isOpen, onOpen, onClose } = props`:** FilterMobile desestructura las props pasadas al componente para acceder a sus valores individuales y adiciona otras como isOpen, onOpen y onClose.. 
+- Se declara un estado local **`activeState`** como un objeto que mapea claves de tipo string a valores booleanos, inicializado según las opciones proporcionadas.
+- Se declara un estado local **`lastSelected`** para almacenar la última opción seleccionada.
+- Se declara un estado local **`currentLabel`** para almacenar la etiqueta actual del componente.
+- Se define la función **`handleListItemActive`** que se ejecuta cuando se hace clic en un elemento de la lista. Actualiza los estados **activeState**, **lastSelected** y **currentLabel**, y llama a **onClose** para cerrar el componente.
+- Los elementos de la lista se generan a partir del array **`options`**, y se aplican clases y manejadores de eventos según el estado **activeState** y las funciones **handleListItemActive** y **onChange**.
+
+```tsx title="/components/screens/BudgetScreen/FiltersBar.tsx" 
+const FilterMobile: FC<
+    FilterProps & {
+        isOpen?: boolean
+        onOpen: () => void
+        onClose: () => void
+    }
+> = (props) => {
+    const { label, options, onChange, isOpen, onOpen, onClose } = props
+
+    const [activeState, setActiveStates] = useState<{ [key: string]: boolean }>(
+        options.map((option) => (typeof option === 'string' ? option : option.value))
+        options.reduce((acc, option) => ({ ...acc, [option]: false,}), {}, )
+    )
+    const [lastSelected, setLastSelected] = useState('')
+    const [currentLabel, setCurrentLabel] = useState(label)
+
+    const handleListItemActive = (option: string) => {
+        setActiveStates((prevActiveStates) => {
+            const newActiveStates = { ...prevActiveStates }
+            if (lastSelected) {
+                newActiveStates[lastSelected] = false
+            }
+            newActiveStates[option] = !newActiveStates[option]
+            setLastSelected(option)
+
+            const selectedOption = (() => {
+                for (const o of options) {
+                    if (typeof o === 'string') {
+                        continue
+                    }
+
+                    if (o.value === option) {
+                        return o
+                    }
+                }
+
+                return undefined
+            })()
+
+            const newLabel = selectedOption ? selectedOption.label : label
+            setCurrentLabel(newLabel)
+            onClose()
+            return newActiveStates
+        })
+    }
+
+    return (
+        <Accordion expanded={!!isOpen} elevation={0} className="filter-accordion">
+            <AccordionSummary onClick={onOpen} expandIcon={<ExpandLessIcon />} aria-controls={`${label}-content`} id={`${label}-header`}>
+                {currentLabel}
+            </AccordionSummary>
+            <AccordionDetails>
+                <List>
+                    {options.map((option) => {
+                        const isString = typeof option === 'string'
+                        const label = isString ? option : option.label
+                        const value = isString ? option : option.value
+                        return (
+                            <ListItemButton
+                                className={activeState[value] ? 'activar' : ''}
+                                onClickCapture={() => handleListItemActive(value)}
+                                onClick={() => onChange && onChange(value)}
+                                key={value}
+                            >
+                                {label}
+                            </ListItemButton>
+                        )
+                    })}
+                </List>
+            </AccordionDetails>
+        </Accordion>
+    )
+}
+
+```
+
+### DesktopFilters
+
+El componente **`DesktopFilters`** renderiza una barra de filtros para la versión de escritorio de Budget. Permite seleccionar **Propiedades (Properties)**, **Periodos (Period)** y **Tipologías (Typologies)**, y aplicar los filtros para ver los datos solicitados reflejados en los gráficos **(BudgetCards)**.
+
+- Se declara un estado local **`formOfSaleOptions`** utilizando el hook useState, inicializado con el valor de **`props.formOfSaleOptions`**.
+- Se define la función **`onChangeProperty`** que se ejecuta cuando se cambia la propiedad seleccionada. Dentro de esta función, se llama a **`onFilterChange`** para actualizar el filtro actual con la nueva propiedad seleccionada. Luego, se actualiza **`formOfSaleOptions`** filtrando las tipologías correspondientes a la propiedad seleccionada y transformando sus datos en el formato requerido.
+- Se define la función **`onChangePeriod`** que se ejecuta cuando se cambia el período seleccionado. Dentro de esta función, se llama a **`onFilterChange`** para actualizar el filtro actual con el nuevo período seleccionado.
+- Se define la función **`onChangeformOfSale`** que se ejecuta cuando se cambia la forma de venta seleccionada. Dentro de esta función, se llama a **`onFilterChange`** para actualizar el filtro actual con la nueva forma de venta seleccionada.
+- Se obtiene el valor del form of sale actual y el valor de la fecha actual utilizando los valores de **formOfSaleOptions, actualFilters y datesOptions**.
+
+```tsx title="/components/screens/BudgetScreen/CountryDataTable.tsx" 
+const DesktopFilters: FC<Props & CustomFilterProps> = (props) => {
+    const { onFilterChange, datesOptions, properties, actualFilters, applyFilters } = props
+    const [formOfSaleOptions, setFormOfSaleOptions] = useState(props.formOfSaleOptions)
+
+    const onChangeProperty = (propertyName: string) => {
+        onFilterChange({
+            ...actualFilters,
+            propertyName,   
+        })
+        
+        setFormOfSaleOptions(properties?.find(p => p.name === propertyName)?.typologies.map(t => {
+            return {
+                value: t.alias,
+                label: t.visualName === 'Apartamentos' ? formatMessage(BudgetMessages.apart) :
+                        t.visualName === 'Dormitorios' ? formatMessage(BudgetMessages.dorm) :
+                        t.visualName === 'Privadas' ? formatMessage(BudgetMessages.room) : t.visualName,
+            }
+        }) || [])
+    }
+
+    const onChangePeriod = (period: string) => {
+        onFilterChange({
+            ...actualFilters,
+            period,
+        })
+    }
+
+    const onChangeformOfSale = (formOfSale: string) => {
+        onFilterChange({
+            ...actualFilters,
+            formOfSale: formOfSale as 'dorm' | 'room' | 'global' | 'apart'            
+        })
+
+    }
+
+    const formOfSaleValue = formOfSaleOptions?.find((option) => option.value === actualFilters.formOfSale) || { label: '', value: '' }
+    const dateValue = datesOptions.find((option) => option.value === actualFilters.period) || { label: '', value: '' }
+    const { formatMessage } = useIntl()
+    return (
+        <div className="filters-bar desktop">
+            <Filter
+                value={actualFilters.propertyName}
+                onChange={onChangeProperty}
+                options={properties?.map(p => p.name) || []}
+                label={formatMessage(BudgetMessages.property)}
+            />
+            <Filter 
+                value={dateValue} 
+                options={datesOptions} 
+                label={formatMessage(BudgetMessages.currentMonth)} 
+                onChange={onChangePeriod} 
+            />
+            <Filter
+                value={formOfSaleValue} 
+                onChange={onChangeformOfSale}
+                options={formOfSaleOptions || []} 
+                label={formatMessage(BudgetMessages.allTypologies)} 
+            />
+            <Button onClick={applyFilters} className="button-filter" disableElevation variant="contained">
+                {formatMessage(BudgetMessages.apply)}
+            </Button>
+        </div>
+    )
+}
+
+```
+
+### MobileFilters
+
+El componente **`MobileFilters`** renderiza una barra de filtros para la versión móvil de Budget. Permite seleccionar **Propiedades (Properties)**, **Periodos (Period)** y **Tipologías (Typologies)**, y aplicar los filtros para ver los datos solicitados reflejados en los gráficos **(BudgetCards)**.
+
+- Define las mismas funciones **`DesktopFilters`**  (`onChangeProperty`, `onChangePeriod` y `onChangeformOfSale`) que se ejecutan cuando según la selección del usuario. 
+- Utiliza los hooks **`useToggle`** y **`useState`** para controlar el estado de apertura/cierre del menú desplegable y qué pestaña del menú está abierta.
+- Obtiene los valores seleccionados de los filtros actuales y los asigna a variables **(formOfSaleValue, dateValue, propertyNameValue)** para mostrar las opciones seleccionadas.
+- Define funciones **(handlePropertyChange, handleDateChange, handleFormOfSaleChange)** que se llaman cuando se selecciona una opción en los filtros correspondientes. Estas funciones actualizan los filtros actuales y las etiquetas de los filtros seleccionados.
+
+```tsx title="/components/screens/BudgetScreen/CountryDataTable.tsx" 
+const MobileFilters: FC<Props & CustomFilterPropsMobile> = (props) => {
+const { onFilterChange, datesOptions, properties, actualFilters, applyFilters, propertyNameOptions } = props
+    const [formOfSaleOptions, setFormOfSaleOptions] = useState(props.formOfSaleOptions)
+    
+    const onChangeProperty = (propertyName: string) => {
+        onFilterChange({
+            ...actualFilters,
+            propertyName,
+        })
+
+        setFormOfSaleOptions(properties?.find(p => p.name === propertyName)?.typologies.map(t => {
+            return {
+                value: t.alias,
+                label: t.visualName === 'Apartamentos' ? formatMessage(BudgetMessages.apart) :
+                     t.visualName === 'Dormitorios' ? formatMessage(BudgetMessages.dorm) : 
+                     t.visualName === 'Privadas' ? formatMessage(BudgetMessages.room) : t.visualName,
+            }
+        }) || [])
+    }
+
+    const onChangePeriod = (period: string) => {
+        onFilterChange({
+            ...actualFilters,
+            period,
+        })
+    }
+
+    const onChangeformOfSale = (formOfSale: string) => {
+        onFilterChange({
+            ...actualFilters,
+            formOfSale: formOfSale as 'dorm' | 'room' | 'global' | 'apart',
+        })
+    }
+
+    const { state: isOpenMenu, toggle: toggleMenu, setFalse: closeMenu } = useToggle(false)
+    const [accordionTabOpened, setAccordionTabOpened] = useState<string>('')
+    const onFilterToggle = (tab: string) => {
+        setAccordionTabOpened((prevState) => (prevState === tab ? '' : tab))
+    }
+    const formOfSaleValue = formOfSaleOptions.find((option) => option.value === actualFilters.formOfSale) || { label: '', value: '' }
+    const dateValue = datesOptions.find((option) => option.value === actualFilters.period) || { label: '', value: '' }
+    const propertyNameValue = propertyNameOptions.find((option) => option.value === actualFilters.propertyName) || { label: '', value: '' }
+    const { formatMessage } = useIntl()
+
+    const [propertyLabel, setPropertyLabel] = useState<string>('')
+    const [dateLabel, setDateLabel] = useState<string>('')
+    const [formOfSaleLabel, setFormOfSaleLabel] = useState<string>('')
+
+    const handlePropertyChange = (option: string) => {
+        onChangeProperty(option)
+        setPropertyLabel(option)
+    }
+
+    const handleDateChange = (option: string) => {
+        onChangePeriod(option)
+        setDateLabel(option)
+    }
+
+    const handleFormOfSaleChange = (option: string) => {
+        onChangeformOfSale(option)
+        setFormOfSaleLabel(option)
+    }
+
+
+    const applyFiltersAndToggleMenu = () => {
+        applyFilters();
+        closeMenu();
+    };
+
+    return (
+        <div className="filters-bar mobile">
+            <IconButton onClick={toggleMenu} className="mobile-menu-button">
+                {isOpenMenu ? <Icon>close</Icon> : <Icon>menu</Icon>}
+            </IconButton>
+            {
+                <Drawer className="budget-mobile-filters-drawer" anchor={'left'} open={isOpenMenu} onClose={closeMenu}>
+                    <div className="subtitle">
+                        <Icon>tune</Icon>
+                        <label>Filtros</label>
+                        <Button onClick={applyFiltersAndToggleMenu} className="button-filter-mobile" disableElevation variant="contained">
+                            {formatMessage(BudgetMessages.apply)}
+                        </Button>
+                    </div>
+
+                    <FilterMobile
+                        isOpen={accordionTabOpened === 'Property'}
+                        onOpen={() => onFilterToggle('Property')}
+                        options={propertyNameOptions}
+                        value={propertyNameValue}
+                        label={formatMessage(BudgetMessages.property)}
+                        onChange={handlePropertyChange}
+                        onClose={() => setAccordionTabOpened('')}
+                    />
+                    <FilterMobile
+                        value={dateValue}
+                        isOpen={accordionTabOpened === 'Current month'}
+                        onOpen={() => onFilterToggle('Current month')}
+                        options={datesOptions}
+                        label={formatMessage(BudgetMessages.currentMonth)}
+                        onChange={handleDateChange}
+                        onClose={() => setAccordionTabOpened('')}
+                    />
+                    <FilterMobile
+                        value={formOfSaleValue}
+                        isOpen={accordionTabOpened === 'All typologies'}
+                        onOpen={() => onFilterToggle('All typologies')}
+                        options={formOfSaleOptions}
+                        label={formatMessage(BudgetMessages.allTypologies)}
+                        onChange={handleFormOfSaleChange}
+                        onClose={() => setAccordionTabOpened('')}
+                    />
+                </Drawer>
+            }
+        </div>
+    )
+}
+
+```
+
+### FilterBreadcrumb
+
+El componente muestra los breadcrumbs de los filtros seleccionados para la versión móvil.
+
+```tsx title="/components/screens/BudgetScreen/CountryDataTable.tsx" 
+
+type BreadCrumbsProps = {
+    onFilterChange: (filters: { period: string; propertyName: string; formOfSale: 'dorm' | 'room' | 'global' | 'apart' }) => void
+    actualFilters: { period: string; propertyName: string; formOfSale: 'dorm' | 'room' | 'global' | 'apart' }
+    properties?: Property[]
+}
+
+export const FilterBreadcrumb: FC<BreadCrumbsProps> = (props) => {
+    const {actualFilters, properties} = props
+
+    const currentProperty = properties?.find((property) => property.name === actualFilters.propertyName);
+    const currentTypology = currentProperty?.typologies.find((typology) => typology.alias === actualFilters.formOfSale);
+
+    return (
+      <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb">
+        <Link href="#" color="inherit" underline="none">{actualFilters.propertyName}</Link>
+        <Link href="#" color="inherit" underline="none">{actualFilters.period}</Link>
+        <Link href="#" color="inherit" underline="none">{currentTypology?.visualName}</Link>
+      </Breadcrumbs>
+    );
+}
+
+```
+
+## Componente principal
+
+El componente **`FiltersBar`** que es responsable de mostrar la barra de filtros en Budget. renderiza el componente **(MobileFilters o DesktopFilters)** dependiendo de si la aplicación se está ejecutando en un dispositivo móvil o de escritorio.
+
+- Utiliza el hook **`useIsMobile`** para determinar si la aplicación se está ejecutando en un dispositivo móvil.
+- La función **`getXPreviousMonthsFromDateOption`** recibe un número de mes y un año y devuelve un objeto con una opción de fecha en formato yyyy-MM y una etiqueta en formato LLLL yyyy. Esta función se utiliza para generar las opciones de fechas disponibles.
+- La variable **`currentYear`** almacena el año actual.
+- Se genera una lista de opciones de fechas **(datesOptions)** para los 12 meses del año utilizando la función **`getXPreviousMonthsFromDateOption`**. Solo se incluyen las opciones que contienen el año actual en la etiqueta.
+- La variable **`formOfSaleOptions`** se crea a partir de las propiedades disponibles. Si existen propiedades, se mapean las tipologías de la primera propiedad para crear un objeto con el valor de la tipología (t.alias), la etiqueta visual de la tipología (t.visualName) y el idioma del usuario (getDateLocale(userLocale)).
+- La variable **`propertyNameOptions`** se crea utilizando el hook useMemo para memorizar su valor. Si no existen propiedades, se devuelve una lista vacía. De lo contrario, se mapean las propiedades para crear un objeto con el valor y la etiqueta del nombre de la propiedad.
+- El componente renderiza los componentes **`MobileFilters o DesktopFilters`** según el valor de isMobile. Pasa las props recibidas al componente correspondiente, junto con las opciones de fechas (datesOptions), opciones de forma de venta (formOfSaleOptions), y opciones de nombres de propiedades (propertyNameOptions).
+
+```tsx title="/components/screens/BudgetScreen/CountryDataTable.tsx" 
+export const FiltersBar: FC<Props> = (props) => {
+    const { properties } = props
+    const isMobile = useIsMobile()
+    const { locale: userLocale } = useUserContext()
+
+    const getXPreviousMonthsFromDateOption = (month: number, year: number) => {
+        const date = new Date()
+        date.setDate(1)
+        date.setMonth(month)
+        date.setFullYear(year)
+        const locale = getDateLocale(userLocale)
+        return { value: format(date, 'yyyy-MM', { locale }), label: upperFirst(format(date, 'LLLL yyyy', { locale })) }
+    }
+    
+    const currentYear = new Date().getFullYear()
+    
+    const datesOptions = []
+    for (let i = 0; i < 12; i++) {
+        const option = getXPreviousMonthsFromDateOption(i, currentYear)
+        if (option.label.includes(currentYear.toString())) {
+            datesOptions.push(option)
+        }
+    }
+
+    const { formatMessage } = useIntl()
+    const formOfSaleOptions = properties ? properties[0].typologies
+        .map(t => ({
+            value: t.alias,
+            label: t.visualName,
+            locale: getDateLocale(userLocale)
+        })) : []
+
+    const propertyNameOptions = useMemo(() => {
+        if (!properties) {
+            return []
+        }
+
+        return properties.map((property) => ({
+            value: property.name,
+            label: property.name,
+        }))
+    }, [properties])
+   
+
+    return isMobile ? (
+        <MobileFilters {...props} datesOptions={datesOptions} formOfSaleOptions={formOfSaleOptions} propertyNameOptions={propertyNameOptions} />
+    ) : (
+        <DesktopFilters {...props} datesOptions={datesOptions} formOfSaleOptions={formOfSaleOptions} />
+    )
+}
+
+```

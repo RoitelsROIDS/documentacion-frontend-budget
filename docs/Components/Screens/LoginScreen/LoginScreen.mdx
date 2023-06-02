@@ -1,0 +1,62 @@
+# LoginScreen
+
+**LoginScreen** es responsable de mostrar la pantalla de inicio de sesión de la aplicación. La finalidad del código es permitir que los usuarios inicien sesión utilizando su cuenta, mostrar un formulario de inicio de sesión para ingresar credenciales y redirigir al usuario a la página principal una vez que hayan validado dichas credenciales.
+
+:::info
+
+El archivo **`LoginScreen.tsx`** cuenta con su propio archivo de estilos **LoginScreen.scss**
+Cualquier modificación en base a los diseños debe realizarse en el correspondiente archivo .scss y no desde los estilos de los componentes.
+
+::: 
+
+## Lógica y funcionamiento
+
+### UserContext
+
+El componente utiliza el **context `UserContext`** para obtener información sobre el estado actual del usuario y el tiempo de carga. Esto permite verificar si el usuario ya ha iniciado sesión o si se está cargando la información del mismo.
+
+```tsx title="/components/screens/LoginScreen/LoginScreen.tsx" 
+import { UserContext } from '../../../App'
+const { user, userLoading } = useContext(UserContext)
+```
+
+### Obtención del código de autenticación
+
+El código hace uso de la **URL** para obtener el parámetro de consulta code utilizando `URLSearchParams`. Esto se utiliza para verificar si se ha proporcionado un código de autenticación en la URL (dicho código puede ser utilizado posteriormente para autenticar al usuario y redirigirlo correctamente después del inicio de sesión).
+
+```tsx title="/components/screens/LoginScreen/LoginScreen.tsx" 
+const urlAuthCode = new URLSearchParams(window.location.search);
+const code = urlAuthCode.get('code');
+```
+
+### Manejo de la lógica de redirección
+
+- Si el usuario está cargando, el componente **`LoginScreen`** no muestra nada para evitar renderizar contenido innecesario.
+- Si el usuario ya ha iniciado sesión, el código verifica si se ha proporcionado un código de autenticación en la URL. Si no se ha proporcionado un código, se redirige al usuario a la página principal **(/)** utilizando el componente **Navigate** de react-router-dom. Si se proporciona un código, se agrega como parámetro a la URL de redirección.
+- Si el usuario no ha iniciado sesión, se muestra la pantalla de inicio de sesión con el formulario correspondiente.
+
+```tsx title="/components/screens/LoginScreen/LoginScreen.tsx" 
+export const LoginScreen: FC = () => {
+    const { user, userLoading } = useContext(UserContext)
+    const urlAuthCode = new URLSearchParams(window.location.search);
+    const code = urlAuthCode.get('code');
+
+    if (userLoading) return null
+    return user ? (
+        !code ? <Navigate to='/' replace />:
+        <Navigate to={`/?code=${code}`} replace />
+    ) : (
+        <div className="login-screen">
+            <div className="login-budget-logo">
+                <div className="logo">
+                    <img src={loginBudgetLogo} />
+                </div>
+            </div>
+
+            <div className="login-form">
+                <LoginForm />
+            </div>
+        </div>
+    )
+}
+```

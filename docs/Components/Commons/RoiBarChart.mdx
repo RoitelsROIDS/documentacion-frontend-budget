@@ -1,0 +1,162 @@
+# RoiBarChart
+
+El componente **"RoiBarChart"** se utiliza para renderizar gráficos de barras. El componente se basa en las bibliotecas **Chart.js y react-chartjs-2** para generar y visualizar los gráficos.
+El propósito principal de este código es representar visualmente datos estadísticos en forma de gráficos de barras, lo que permite al usuario comprender y analizar los datos de manera más intuitiva.
+
+
+## Opciones y configuración de los gráficos
+
+Se definen diferentes opciones para los gráficos de barras verticales y horizontales, que incluyen configuraciones globales o configuraciones específicas como el aspecto responsive, el tamaño de las barras, los plugins para etiquetas de datos, los ejes, las leyendas y las animaciones.
+Además, se utilizan los datos proporcionados a través de las `props graphData`, que incluyen las etiquetas de los ejes x e y, así como los conjuntos de datos que contienen los valores de las barras, los colores de borde y los colores de fondo.
+
+### Se definen las opciones generales para todos los gráficos
+
+Las opciones van a determinar si los graficos deben ser **responsives**, el **aspect-ratio** de los mismos en relación a los diferentes tipos de pantallas, y los **plugins** que sirven para agregar funciones y detalles de diseño.
+
+```tsx title="/components/commons/RoiBarChart/RoiBarChart.tsx"
+const commonOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: isBigScreen ? 2.2 : 1.5,
+    plugins: {
+        legend: {
+            display: false,
+        },
+        title: {
+            display: false,
+            text: '',
+        },
+        tooltip: {
+            enabled: false,
+        },
+        datalabels: {
+            anchor: 'end',
+            display: true,
+            color: (ctx: Context) => {
+                const value = ctx.dataset.data[ctx.dataIndex]
+                const maxValue = Math.max(...(ctx.dataset.data as number[]))
+                return value && (value as number) / maxValue > 0.5
+                    ? ('white' as const)
+                    : (ctx.dataset.backgroundColor?.[ctx.dataIndex as keyof typeof ctx.dataset.backgroundColor] as unknown as string) || 'white'
+            },
+            formatter: (value: number, context: { dataset: { label?: string } }) => {
+                const {
+                    dataset: { label },
+                    } = context;
+                    if (value === 0) {
+                    return '';
+                    }
+                    return label === 'type1' ? '$' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+            },
+        },
+    },
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    hover: false,
+}
+```
+
+### Luego se definen las opciones para los gráficos horizontales y verticales
+
+Utilizando las **commonOptions** establecidas previamente, se generan las opciones para diferenciar que tipo de gráfico va a estar renderizando la aplicación, basado en las metricas correspondiente (los gáficos con barras horizontales para Revenue, ADR y RevPar; mientras que las barras verticales para Occupancy)
+
+```tsx title="/components/commons/RoiBarChart/RoiBarChart.tsx"
+const verticalOptions: ChartOptions<'bar'> = {
+    ...commonOptions,
+    indexAxis: 'x' as const,
+    barThickness: isBigScreen ? 50 :'flex',
+    plugins: {
+        ...occupancyOptions.plugins,
+        datalabels: {
+            ...occupancyOptions.plugins?.datalabels,
+            align: (ctx: Context) => {
+                const value = ctx.dataset.data[ctx.dataIndex]
+                const maxValue = Math.max(...(ctx.dataset.data as number[]))
+                return value && (value as number) / maxValue > 0.5 ? ('bottom' as const) : ('top' as const)
+            },
+        },
+    },
+
+    scales: {
+    },
+}
+
+const horizontalOptions: ChartOptions<'bar'> = {
+    ...commonOptions,
+    barThickness: isBigScreen ? 25 :'flex',
+    indexAxis: 'y' as const,
+
+    plugins: {
+        ...commonOptions.plugins,
+        datalabels: {
+            ...commonOptions.plugins?.datalabels,
+            align: (ctx: Context) => {
+                const value = ctx.dataset.data[ctx.dataIndex]
+                const maxValue = Math.max(...(ctx.dataset.data as number[]))
+                return value && (value as number) / maxValue > 0.5 ? ('left' as const) : ('right' as const)
+            },
+        },
+    },
+
+    scales: {
+    },
+}
+```
+
+## Estructura de los gráficos
+
+La estructura en la que se construyen los gráficos esta construida con componentes  `<Card>` y `<CardContent>` de Material UI, y `<Bar>` de React-chartjs-2.
+El componente `<Bar>` va a recibir como **options** a las `verticalOptions` o `horizontalOptions` dependiendo de que gráfico busque renderizarse.
+
+```tsx title="/components/commons/RoiBarChart/RoiBarChart.tsx"
+type Props = {
+    graphData: {
+        labels: string[]
+        datasets: {
+            label: string
+            data: number[]
+            borderColor: string[]
+            backgroundColor: string[]
+        }[]
+    }
+    title: string
+    vertical?: boolean
+}
+
+const RoiBarChart: FC<Props> = (props) => {
+    const { graphData, title, vertical } = props
+    const graphWithStyles: ChartData<'bar', number[], string> = {
+        ...graphData,
+        datasets: graphData.datasets.map((dataset, index) => ({
+            ...dataset,
+            borderRadius: 5,
+            animation: index === 0 ? animationActiveOption : false,
+        })),
+    }
+    const {isUpXl: isBigScreen } = useScreenBrakpoints()
+
+    const commonOptions: ChartOptions<'bar'> = {}
+
+    const verticalOptions: ChartOptions<'bar'> = {}
+
+    const horizontalOptions: ChartOptions<'bar'> = {}
+
+    return (
+        <div className="card">
+            <Card>
+                <CardContent className="card-content">
+                    <div className="title-and-info-popup">
+                        <Typography variant="h5">{title}</Typography>
+                    </div>
+                    <Bar
+                        options={vertical ? verticalOptions : horizontalOptions}
+                        data={graphWithStyles}
+                        updateMode="normal"
+                        plugins={[ChartDataLabels]}
+                    />
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
+```

@@ -1,0 +1,75 @@
+# WorldMap
+
+Este componente utiliza la biblioteca **react-simple-maps** para mostrar un mapa interactivo del mundo con diferentes colores en función de los valores proporcionados en la propiedad data. El objetivo principal del componente es visualizar datos geográficos y resaltar la información relevante en el mapa.
+**`WorldMap`** recibe un array de objetos en la propiedad data, donde cada objeto contiene información de un país y su respectivo valor. Utilizando estos datos, se colorea el mapa de acuerdo con los valores proporcionados **(los cuales vienen de CountryDataTable)**, lo que permite una visualización rápida y comprensible de la distribución geográfica de los datos.
+
+- El componente se define como una función de componente con una **interfaz Props** para recibir la propiedad **data** que contiene los datos de los países y sus valores. Dentro de la función, se desestructura la propiedad data para obtener su valor.
+
+```tsx title="/components/screens/BudgetScreen/WorldMap.tsx" 
+data: { country: Alpha2Code; value: number }
+```
+
+- Luego se implementa el `useMemo` para calcular el valor máximo de los valores de **data**. Este valor se utiliza posteriormente para normalizar los colores en el mapa en función de los valores proporcionados. La función **reducce** se aplica a data para encontrar el valor máximo y se actualiza cuando **data** cambia.
+
+```tsx title="/components/screens/BudgetScreen/WorldMap.tsx" 
+const maxReservationsValue: number = useMemo(
+    () => data.reduce((acc, item) => (item.value > acc ? item.value : acc), 0),
+    [data],
+)
+```
+
+- Utiliza el componente `ComposableMap` como el contenedor principal del mapa. Dentro de `ComposableMap`, se utiliza el componente `Geographies` para mostrar las geometrías de los países en el mapa. Luego, dentro de Geographies, se utiliza el componente `Geography` para representar cada país en el mapa y asignarle un color basado en su valor correspondiente en data.
+El atributo geography se utiliza para especificar la fuente de datos de las geografías. En este caso, **GEOGRAPHY_URL** es una variable que contiene la URL de la fuente de datos de las geografías.
+
+```tsx title="/components/screens/BudgetScreen/WorldMap.tsx" 
+return (
+    <ComposableMap
+        // color={'#E4E5E6'}
+        // stroke="#E4E5E6"
+        projectionConfig={{
+            scale: 85,
+            center: [85, -70]
+        }}
+        viewBox="0 0 550 280"
+        projection="geoMercator"
+    >
+        <Geographies geography={GEOGRAPHY_URL}>
+            {({ geographies }) =>
+                geographies.map((geo) => {
+                    const countryId = geo.id
+                    const geoReservations: number = data.find((data) => data.country === countryId)?.value || 0
+                    const reservationsPercent = geoReservations / maxReservationsValue
+                    const finalPercent = 50 - Math.round(reservationsPercent * 20)
+                    return (
+                        <Geography
+                            key={geo.rsmKey}
+                            geography={geo}
+                            style={{
+                                default: {
+                                    fill: geoReservations > 0 ? `hsl(200deg 100% ${finalPercent}%)` : '#E6E6EA',
+                                    outline: 'none',
+                                    stroke: '#FFFFFF', 
+                                    strokeWidth: 0.3, 
+                                },
+                                hover: {
+                                    fill: geoReservations > 0 ? `hsl(200deg 100% ${finalPercent}%)` : '#E6E6EA',
+                                    outline: 'none',
+                                    stroke: '#FFFFFF', 
+                                    strokeWidth: 0.3, 
+                                },
+                                pressed: {
+                                    fill: geoReservations > 0 ? `hsl(200deg 100% ${finalPercent}%)` : '#E6E6EA',
+                                    outline: 'none',
+                                    stroke: '#FFFFFF', 
+                                    strokeWidth: 0.3, 
+                                },
+                            }}
+                        />
+                    )
+                })
+            }
+        </Geographies>
+    </ComposableMap>
+    )
+}
+```

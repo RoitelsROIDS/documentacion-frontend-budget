@@ -1,0 +1,45 @@
+# BudgetCards
+El componente **BudgetCards** es responsable de generar gráficos de barras para diferentes tipos de presupuesto utilizando los datos y los filtros proporcionados por el componente `<RoiBarChart>`. Los tipos de presupuesto incluyen **"Revenue" (Ingresos), "RevPAR" (Ingresos por habitación disponible), "ADR" (Tarifa promedio diaria) y "Occupancy" (Ocupación)**. Cada gráfico de barras se muestra en un componente RoiBarChart. Esta abstracción permite mostrar visualmente los presupuestos de manera clara y estructurada.
+
+:::caution Importante
+
+**BudgetCards** recibe los graficos del componente `RoiBarChart` (el cual se encarga de renderizar los gráficos y sus respectivas opciones).
+
+:::
+
+## Interfaz y colores
+
+En primera instancia se define una interfaz llamada **OwnProps** que representa las propiedades esperadas para el componente **BudgetCards**. Esta interfaz incluye dos propiedades:
+
+- **data:** Es un objeto que utiliza el tipo Record para definir las propiedades del objeto y sus respectivos valores. En este caso, las claves del objeto son del tipo ChartTitle y los valores son objetos que contienen propiedades específicas para cada tipo de gráfico. Estas propiedades incluyen Budget (Presupuesto), Now (Actual), ToGo (Faltante) y LastYear (Año anterior), todos ellos con un tipo de dato number.
+
+- **checkboxFilters:** También es un objeto definido con el tipo Record. Las claves de este objeto son del tipo ChartPeriod y los valores son del tipo boolean. Este objeto representa los filtros de casillas de verificación para los períodos del gráfico.
+
+Además, se define el objeto **barColors**, que contiene los colores utilizados en los gráficos de barras para cada tipo de **data**. Contienen las propiedades barColorsBack y barColor que definen los colores de fondo y de la barra para el tipo de presupuesto respectivo.
+
+## getBarDataChart
+
+La función `getBarDataChart` es una función que recibe un argumento type de tipo **ChartTitle** y devuelve un objeto que contiene los datos necesarios para generar un gráfico de barras.
+
+- Se declara una variable **periods** que es un array de tipo **ChartPeriod**. Utiliza **Object.keys** para obtener las claves del objeto **data[type]** y luego las asigna a **periods** utilizando **as ChartPeriod[]** para indicar que los valores del array son de tipo **ChartPeriod**.
+
+- Se declara una variable **values** que es un array de números. Utiliza el método **map** para recorrer los elementos de **periods** y acceder a los valores correspondientes en **data[type]**. Si el valor es **undefined**, se asigna **0** como valor predeterminado. Los valores resultantes se almacenan en **values**.
+
+- Se calcula el valor máximo de **values** utilizando **Math.max(...values)** y se asigna a la variable **maxValue**.
+
+- Se declara una variable **filterValues** que es un array de números. Utiliza el método **map** para recorrer los elementos de **periods** y acceder a los valores correspondientes en **data[type]**. Si el valor de **checkboxFilters[key**] es **true**, se usa el valor en **data[type][key]**, de lo contrario, se asigna **0**. Los valores resultantes se almacenan en **filterValues**.
+
+- Se declara una variable **realValueColorArray** que es un array de strings. Utiliza el método **map** para recorrer los elementos de **periods** y acceder a los colores de la propiedad **barColor** en el objeto **barColors**. La correspondencia se realiza utilizando **period** como clave en **barColors**. Los colores resultantes se almacenan en **realValueColorArray**.
+
+- Se declara una variable **overlapBarColorArray** que es un array de strings. Utiliza el método **map** para recorrer los elementos de **periods** y acceder a los colores de la propiedad **barColorsBack** en el objeto **barColors**. La correspondencia se realiza utilizando **period** como clave en **barColors**. Los colores resultantes se almacenan en **overlapBarColorArray**.
+
+- Finalmente, se devuelve un objeto que contiene las propiedades necesarias para generar el gráfico de barras. Las propiedades incluyen **labels** que se obtiene mediante el método **map** para convertir los valores de **periods** en etiquetas utilizando la función **formatMessage** con mensajes específicos de presupuesto, y **datasets** que es un array de objetos. Cada objeto dentro de **datasets** representa un conjunto de datos para una serie del gráfico de barras. Cada objeto tiene propiedades como **label** (etiqueta), **data** (valores), **backgroundColor** (color de fondo), **borderColor** (color del borde), **barColor** (color de la barra), **borderWidth** (ancho del borde) y **borderRadius** (radio de las esquinas). Los valores utilizados en estas propiedades se obtienen de las variables previamente definidas.
+
+```tsx title="/components/screens/BudgetScreen/BudgetCards.tsx" 
+const periods: Array<ChartPeriod> = Object.keys(data[type]) as ChartPeriod[]
+const values: number[] = periods.map((key) => (data[type][key] || 0))
+const maxValue = Math.max(...values)
+const filterValues = periods.map((key) => (checkboxFilters[key] ? (data[type][key] || 0) : 0))
+const realValueColorArray = periods.map((period) => barColors[period as keyof typeof barColors].barColor)
+const overlapBarColorArray = periods.map((period) => barColors[period as keyof typeof barColors].barColorsBack)
+```

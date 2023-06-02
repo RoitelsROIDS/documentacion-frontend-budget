@@ -1,0 +1,27 @@
+# LoadingScreen
+
+Este componente tiene la finalidad de mostrar una pantalla de carga mientras se realiza alguna tarea en segundo plano, como cargar datos o procesar información. La pantalla de carga está diseñada para proporcionar una experiencia visual agradable y mantener informado al usuario de que se está llevando a cabo una tarea.
+El componente LoadingScreen utiliza la biblioteca Material-UI para renderizar un indicador de progreso circular, junto con un logotipo de presupuesto en la parte superior de la pantalla. Esta combinación crea una visualización atractiva y personalizada para la pantalla de carga.
+
+```tsx title="/components/screens/BudgetScreen/LoadingScreen.tsx" 
+import React, { FunctionComponent } from 'react'
+import { CircularProgress } from '@mui/material'
+import loadingBudgetLogo from '../../../assets/loading-budget-logo.svg'
+
+const LoadingScreen: FunctionComponent = () => {
+    return (
+        <div
+            style={{
+                height: 'calc(100vh - var(--topbar-height))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+            }}
+        >
+            <img style={{ maxWidth: '300px' }} src={loadingBudgetLogo} /> <CircularProgress />
+        </div>
+    )
+}
+
+```

@@ -1,0 +1,52 @@
+# Private Route
+
+El componente llamado **"PrivateRoute"** es el controlar el acceso a rutas privadas dentro de la aplicación. La finalidad de este código es asegurar que el usuario esté autenticado antes de permitirle acceder a una ruta privada para acceder a Budgets.
+
+## Autenticación
+
+Si el usuario no está autenticado, se utiliza la función **"navigate" de react-router-dom** para redirigir al usuario a la página de inicio de sesión **("/login")**. Si el usuario está autenticado podra acceder a la pantalla principal de Budget.
+Esto se logra utilizando el hook `useContext` para acceder al contexto de usuario (UserContext) y obtener el estado del usuario y userLoading. Luego el hook `useNavigate` se utiliza para obtener la función de navegación para redirigir al usuario a una ruta específica. 
+
+
+```tsx title="/src/components/commons/PrivateRoute.tsx"
+type Props = {
+    element: JSX.Element
+}
+
+const PrivateRoute: FC<Props> = (props) => {
+    const { element } = props
+    const navigate = useNavigate()
+    const { userLoading, user } = useContext(UserContext)
+
+    if (userLoading) return null
+    if (!user) {
+        navigate('/login')
+    }
+
+    return element
+}
+```
+
+## Import PrivateRoute
+
+El componente debe ser importado e implementado en la Route correspondiente donde hay que validar si existe el usuario o no. En este caso: `element={<PrivateRoute element={<BudgetScreen userInfo={userInfo} />} />}`
+
+```tsx title="/src/App.tsx"
+return (
+    <>
+        <CssBaseline />
+        <IntlProvider locale={locale} messages={loadLocaleData(locale)}>
+            <UserContext.Provider value={{ user: userInfo, userLoading, backendServices, locale, setLocale, loading, setLoading }}>
+                <BrowserRouter>
+                    <NavigationContainer>
+                        <Routes>
+                            <Route path="/" element={<PrivateRoute element={<BudgetScreen userInfo={userInfo} />} />} />
+                            <Route path="login" element={<LoginScreen />} />
+                        </Routes>
+                    </NavigationContainer>
+                </BrowserRouter>
+            </UserContext.Provider>
+        </IntlProvider>
+    </>
+)
+```

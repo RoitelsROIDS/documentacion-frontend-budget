@@ -1,0 +1,88 @@
+# LoginForm
+
+**LoginForm** es un componente de formulario de inicio de sesión utilizando la biblioteca Material-UI . El formulario está diseñado para permitir a los usuarios iniciar sesión ingresando su correo electrónico y contraseña. Proporciona opciones para recordar al usuario y también muestra un mensaje de error si se ingresan credenciales incorrectas.
+
+:::info
+
+1. El archivo **`LoginForm.tsx`** cuenta con su propio archivo de estilos **LoginScreen.scss**
+Cualquier modificación en base a los diseños debe realizarse en el correspondiente archivo .scss y no desde los estilos de los componentes.
+
+2. El componente debe ser importado dentro del archivo **`LoginScreen.tsx`**
+::: 
+
+## Interfaz de usuario
+El código proporciona una estructura de formulario de inicio de sesión con campos de entrada para correo electrónico y contraseña, así como opciones para recordar al usuario y recuperar la contraseña.
+Utiliza componentes de Material-UI como: 
+
+```bash
+<TextField> <Button> <FormControl> <FormControlLabel> <FormHelperText>
+<Checkbox> <InputAdornment> <IconButton> <FormHelperText>
+```
+
+## Lógica y funcionamiento
+
+### Estado del componente
+- **userNameAndPass:** Es un estado que almacena el correo electrónico y la contraseña ingresados por el usuario.
+- **showPassword:** Es un estado que controla la visibilidad de la contraseña.
+- **rememberMe:** Es un estado que indica si se debe recordar al usuario o no.
+- **errorMessage:** Es un estado que almacena el mensaje de error en caso de que las credenciales sean incorrectas.
+
+
+```tsx title="/components/screens/LoginScreen/LoginForm.tsx" 
+
+const [userNameAndPass, setUserNameAndPass] = useState<{ email?: string; password?: string }>({
+    email: undefined,
+    password: undefined,
+});
+  
+const [showPassword, setShowPassword] = useState(false);
+
+const [rememberMe, setRememberMe] = useState(false);
+
+const [errorMessage, setErrorMessage] = useState<string | null>(null);
+```
+
+### onChange y onSubmit
+
+- La función **`onChange`** se utiliza para manejar los cambios en los campos de entrada de correo electrónico y contraseña. Actualiza el estado **`userNameAndPass`** con los valores ingresados por el usuario.
+- La función **`onSubmit`** se llama cuando el usuario hace clic en el botón "Sign in". Verifica si se han ingresado tanto el correo electrónico como la contraseña. Si alguno de los dos está faltando, se establece un mensaje de error correspondiente. Luego, llama a la función **`loginWithUserAndPass`** pasando el correo electrónico y la contraseña ingresados.
+
+```tsx title="/components/screens/LoginScreen/LoginForm.tsx" 
+const onChange = (key: 'email' | 'password', event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setUserNameAndPass((prevUser) => ({
+    ...prevUser,
+    [key]: event.target.value,
+    }));
+};
+
+const onSubmit = () => {
+    if (!userNameAndPass.email || !userNameAndPass.password) {
+        setErrorMessage("Please enter email and password");
+        return;
+    }
+
+    loginWithUserAndPass(userNameAndPass as { email: string; password: string }).catch(()=>{
+        setErrorMessage("Usuario y/o contraseña incorrecta");
+    })
+}; 
+```
+
+### handleRememberMeChange
+La función **`handleRememberMeChange`** se utiliza para manejar los cambios en la casilla de verificación "Remember me". Actualiza el estado rememberMe según el estado de la casilla de verificación.
+
+```tsx title="/components/screens/LoginScreen/LoginForm.tsx" 
+const handleRememberMeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRememberMe(event.target.checked);
+};
+```
+
+### handleSubmit
+
+La función **`handleSubmit`** se ejecuta cuando se envía el formulario. Previene el comportamiento de envío predeterminado y se puede usar para realizar validaciones adicionales antes de enviar los datos del formulario al servidor.
+
+```tsx title="/components/screens/LoginScreen/LoginForm.tsx" 
+const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    // Función para validar las credenciales del usuario y redirigir al usuario a Budget
+};
+```

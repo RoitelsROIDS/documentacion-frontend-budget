@@ -1,0 +1,94 @@
+---
+sidebar_position: 2
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Instalación y primeros pasos
+
+## 1. Framework, Lenguaje y Biblioteca de Componentes de UI
+La aplicación utiliza el framework/librería de **React Js** y la biblioteca de componentes **Material-UI** para construir su interfaz de usuario. Material-UI proporciona una amplia gama de componentes predefinidos y estilizados que siguen los principios de diseño de Material Design.
+En cuanto al lenguaje de programación utilizado en el proyecto, se desarrolla en **TypeScript**, que es un superconjunto tipado de JavaScript. TypeScript agrega características de tipado estático a JavaScript, lo que permite detectar y corregir errores en tiempo de compilación.
+
+### ¿Por qué Typescript?
+
+Algunos de los beneficios de TypeScript son los siguientes:
+
+- **Tipado estático:** TypeScript permite declarar tipos de variables, parámetros de función y valores de retorno, lo que proporciona mayor seguridad y detecta posibles errores durante el desarrollo. Esto ayuda a evitar errores comunes y mejora la calidad del código.
+
+- **Mejor soporte para IDEs:** Los IDEs (Entornos de Desarrollo Integrados) ofrecen un mejor soporte para TypeScript en comparación con JavaScript. Proporcionan funciones avanzadas como autocompletado, navegación de código, refactoring y verificación de tipos en tiempo real, lo que agiliza el desarrollo y reduce errores.
+
+- **Mayor mantenibilidad:** Al utilizar tipado estático, el código escrito en TypeScript es más legible y autodocumentado. Esto facilita el mantenimiento y la colaboración en proyectos a largo plazo, ya que es más fácil comprender el propósito y la estructura del código.
+
+- **Compatibilidad con JavaScript:** TypeScript es compatible con JavaScript existente, lo que significa que se puede usar en proyectos existentes sin necesidad de realizar cambios drásticos. Los archivos JavaScript se pueden incluir en un proyecto de TypeScript, y TypeScript puede consumir y emitir código JavaScript.
+
+- **Mejora la productividad:** TypeScript permite utilizar características modernas de JavaScript antes de que sean oficialmente admitidas en todos los navegadores. Además, proporciona herramientas y características adicionales, como módulos, clases y interfaces, que facilitan el desarrollo de aplicaciones escalables y mantenibles.
+
+
+***
+
+## 2. Requisitos previos
+
+Para clonar e instalar el proyecto, necesitarás tener instalado en tu sistema lo siguiente:
+
+- **Git:** Git es un sistema de control de versiones distribuido ampliamente utilizado. Asegúrate de tener Git instalado en tu sistema antes de clonar el repositorio. Puedes obtener Git desde el sitio web oficial de Git: https://git-scm.com/
+
+- **Node.js y npm:** Node.js es un entorno de ejecución de JavaScript del lado del servidor, y npm (Node Package Manager) es el gestor de paquetes de Node.js. Asegúrate de tener instalada una versión reciente de Node.js, que también incluirá npm. Puedes descargar Node.js desde el sitio web oficial: https://nodejs.org/
+
+- **Yarn:** Como gestor de paquetes alternativo a npm, Yarn es una herramienta de gestión de dependencias que ofrece algunas ventajas adicionales, como una mayor velocidad de instalación y una mejor gestión de la caché.Puedes instalar Yarn siguiendo las instrucciones disponibles en su sitio web oficial: https://yarnpkg.com/
+
+***
+
+## 3. Clonación del repositorio e instalación de las dependencias
+Para clonar el repositorio y configurar el entorno de desarrollo local, sigue los siguientes pasos:
+
+a. Abrir una terminal y ejecutar el siguiente contacto para clonar el repositorio
+```bash
+git clone https://github.com/roitels/budgets-react-frontend.git
+```
+
+b. Navega al directorio del proyecto
+```bash
+cd /budget-react-frontend
+```
+
+c. Instala las dependencias necesarias ejecutando el comando `npm/yarn install`. Este comando instalará todas las dependencias listadas en el archivo `package.json`.
+
+```bash
+npm install
+```
+
+```bash
+yarn install
+```
+
+
+d. Ejecutar el comando para iniciar el repositorio en el `localhost:3000`
+
+```bash
+npm run start
+```
+
+```bash
+yarn start
+```
+***
+
+## 4. Principales dependencias del proyecto
+
+:::info Dependencias
+<div className="">
+<Tabs className="">
+  <TabItem value="Axios">Axios es una biblioteca popular de JavaScript para realizar solicitudes HTTP. Es probable que la aplicación haga uso de esta biblioteca para comunicarse con servidores o APIs externas.</TabItem>
+  <TabItem value="React-chartjs-2">Facilita la creación de gráficos interactivos en una aplicación React utilizando la biblioteca Chart.js, permitiendo mostrar datos de manera visualmente atractiva y significativa.</TabItem>
+  <TabItem value="Firebase">Firebase es una plataforma de desarrollo de aplicaciones web y móviles que proporciona una amplia gama de servicios y herramientas, como autenticación de usuarios, almacenamiento de datos en la nube, análisis, etc.</TabItem>
+  <TabItem value="React Router">React Router DOM es una biblioteca utilizada para manejar el enrutamiento en aplicaciones React. Permite la navegación entre diferentes vistas y la gestión de las rutas de la aplicación.</TabItem>
+  <TabItem value="React Intl">Esta biblioteca proporciona soporte para internacionalización (i18n) en aplicaciones React. Permite la traducción y localización de contenido en la aplicación.</TabItem>
+  <TabItem value="React Simple Maps">Esta biblioteca ofrece componentes y utilidades para la visualización de mapas interactivos y datos geográficos en aplicaciones React. </TabItem>
+  <TabItem value="i18n-iso-countries">Proporciona funciones para trabajar con la internacionalización y obtener información de países, como nombres y códigos.</TabItem>
+  <TabItem value="Flagpack-core">Ofrece una colección de banderas en formato SVG para representar visualmente los países en una aplicación </TabItem>
+</Tabs>
+</div>
+:::
+
+

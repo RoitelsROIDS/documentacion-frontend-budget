@@ -1,0 +1,152 @@
+# TopBar
+
+El componente **TopBar** se utiliza para mostrar la barra superior de la interfaz de usuario de la aplicación. Proporciona funcionalidades como cambiar el idioma, acceder al menú de perfil del usuario y realizar acciones relacionadas con el perfil y la autenticación del usuario.
+
+:::info
+
+1. El archivo **TopBar.tsx** cuenta con su propio archivo de estilos **TopBar.scss**
+Cualquier modificación en base a los diseños debe realizarse en el correspondiente archivo .scss y no desde los estilos de los componentes.
+
+2. El componente debe ser importado dentro del archivo **`NavigationContainer.tsx`**
+::: 
+
+## UserContext
+El componente utiliza el contexto `UserContext` para acceder al estado del usuario actual y la configuración del idioma. Esto permite cambiar el idioma de la aplicación, verificar la presecia del usuario y mostrar la imagen de perfil del usuario si ha iniciado sesión.
+
+```bash
+import UserContext from '../../contexts/UserContext'
+```
+
+## Menu
+
+El propósito del componente **Menu** en este código es mostrar un menú de opciones relacionadas con el perfil del usuario. Cuando el usuario hace clic en el botón de avatar en la barra superior, se abre el menú y se muestran las diferentes opciones disponibles. Estas opciones pueden incluir acciones para aceder a información de contacto, descarga de guías rápidas, acceso al centro de ayuda y cierre de sesión.
+
+### Guía rápida
+
+Elemento dentro del menú que dispara un evento (abriendo en una nueva pestaña) al hacer click. La penstaña redirije al usuario a una pestaña para **visualizar y descargar** el pdf "Guía rápida de RoiBi".
+
+```tsx title="/components/navigation/TopBar.tsx" 
+const handleDownloadGuiaRapida = () => {
+    if (locale === 'es') {
+        window.open('https://www.roitels.com/wp-content/uploads/2023/05/Guia-Rapida.pdf', '_blank');
+        handleClose();
+    } else {
+        window.open('https://www.roitels.com/wp-content/uploads/2023/05/Guia-Rapida.pdf', '_blank');
+        handleClose();
+    }
+}
+
+<Menu
+    className="user-menu"
+    open={isProfileOpen}
+    onClose={handleClose}
+    anchorEl={profileMenuAnchorEl}
+    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+    PaperProps={{ sx: {width: '180px',},}}
+>
+    <MenuItem onClick={handleDownloadGuiaRapida}>Guía rápida</MenuItem>
+</Menu>
+```
+### Centro de ayuda
+
+Elemento dentro del menú que dispara un evento (abriendo en una nueva pestaña) al hacer click. La penstaña redirije al usuario a una página anexa de RoiBi, para que este pueda realizar consultas al centro de **soporte de usuarios**.
+
+```tsx title="/components/navigation/TopBar.tsx" 
+const handleHelpCenterClick = () => {
+    window.open('https://revenuemanagementmexico.com/', '_blank');
+    handleClose();
+}
+
+<Menu
+    className="user-menu"
+    open={isProfileOpen}
+    onClose={handleClose}
+    anchorEl={profileMenuAnchorEl}
+    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+    PaperProps={{ sx: {width: '180px',},}}
+>
+    <MenuItem onClick={handleHelpCenterClick}>Ayuda</MenuItem>
+</Menu>
+```
+### Logout
+
+Elemento dentro del menú que dispara un evento **(cerrando la sesión del usuario)** al hacer click. La lógica de la función logout es importada del archivo `firebase.ts`.
+
+```bash
+import { logout } from '../../services/firebase'
+```
+
+```tsx title="/components/navigation/TopBar.tsx" 
+<Menu
+    className="user-menu"
+    open={isProfileOpen}
+    onClose={handleClose}
+    anchorEl={profileMenuAnchorEl}
+    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+    PaperProps={{ sx: {width: '180px',},}}
+>
+     <MenuItem onClick={logout}>Cerrar sesión</MenuItem>
+</Menu>
+```
+
+## Selector de idioma
+
+La aplicación cuenta con un **controlador** que se encarga de **cambiar el idioma** seleccionado por el usuario. Durante el proceso de cambio de idioma, se muestra un indicador de carga en la interfaz de usuario para informar al usuario que la operación está en curso (y evitar cambios bruscos en el diseño cuando se renderizan nuevamente los componentes luego de cambiar de idioma).
+
+El controlador realiza las siguientes acciones:
+- Establece el estado **loading** en **true** utilizando la función **setLoading**. Esto indica que se está realizando una operación o carga que requiere tiempo y que se debe mostrar un indicador de carga en la interfaz de usuario.
+- Después de un retraso de 1.5 segundos utilizando **setTimeout**, se ejecuta una función de retrollamada.
+- En la función de retrollamada, se utiliza la función **setLocale** para establecer el nuevo idioma seleccionado **newLocale** en el contexto de usuario **(UserContext)**. La propiedad **locale** se actualiza con el nuevo idioma, que se convierte a un tipo específico **('en' o 'es')**.
+- Por último se establece el estado **loading** en **false** utilizando **setLoading**, lo que indica que la operación de cambio de idioma ha finalizado y que el indicador de carga puede ocultarse.
+
+```tsx title="/components/navigation/TopBar.tsx" 
+const {user, locale, setLocale, setLoading } = useContext(UserContext)
+
+const handleLocaleChange = (newLocale: string) => {
+    setLoading(true)
+    setTimeout(() => {
+        setLocale(newLocale as 'en' | 'es')
+        setLoading(false)
+    }, 1500)
+} 
+
+// Controlador para versiones de escritorio y tablets
+<FormControl variant="outlined" size="small">
+    <Select
+        value={locale}
+        onChange={(e) => handleLocaleChange(e.target.value)}
+        inputProps={{
+            name: 'language',
+            id: 'language-select',
+        }}
+    >
+        <MenuItem value={'en'}>English</MenuItem>
+        <MenuItem value={'es'}>Español</MenuItem>
+    </Select>
+</FormControl>
+
+// Controlador para versiones mobiles
+<ButtonGroup variant="text">
+    <Button onClick={() => {            
+        handleLocaleChange('en')
+        handleClose()
+        }}>
+        English
+    </Button>
+    <Button
+        onClick={() => {
+            handleLocaleChange('es')
+            handleClose()
+        }}>
+        Español
+    </Button>
+</ButtonGroup>
+
+```
+
+:::caution Importante
+
+El controlador para cambiar de idioma difiere dependiendo del dispositivo en dónde se este ejecutando la aplicación.
+Para versiones de escritorio y tablets, el controlador es un componente `<FormControl>` que se encuentra en el TopBar, mientras que en versiones mobiles el controlador es un componente `<ButtonGroup>` que se encuentra dentro del componente `<Menu>`.
+
+:::

@@ -1,0 +1,217 @@
+# BudgetScreen
+
+La finalidad de esta **`BudgetScreen`** es mostrar información/métricas financieras y estadísticas relacionadas con el presupuesto y rendimiento de propiedades hoteleras. El código se encarga de obtener datos del backend, procesarlos y mostrarlos de manera visualmente atractiva en la interfaz de usuario a través de gráficos, mapas y tablas (importados y renderizados por los compoenntes `BudgetCards.tsx`, `CountryDataTable.tsx` y `WorldMap.tsx`  ).
+
+:::info
+Para editar cualquier estilo del componente **BudgetScreen**, debe realizarse desde el archivo de estilos **BudgetScreen.scss**.
+::: 
+
+## Definición de tipos de datos
+- Se define el tipo `Props` para las propiedades del componente `BudgetScreen`.
+
+```tsx title="/components/screens/BudgetScreen/BudgetScreen.tsx" 
+type Props = {
+    open?: boolean
+    userInfo?: UserInfo
+}
+
+// UserInfo es un type declarado en el archivo types.d.ts el cual se conecta a los endpoits del backend que traen información propia del usuario.
+// este type cuenta con datos del usuario como: nombre, email, propiedades (nombre, id y tipología)
+type UserInfo = {
+    name: string
+    lastname: string
+    email: string
+    firebaseID: string
+    properties: Property[]
+    photoURL?: string
+}
+type Property = {
+    propertyID: string
+    name: string
+    typologies: Typology[]
+}
+type Typology = {
+	visualName: string // Dormitorios, Apartamentos, Privadas
+	alias: string // dorm, apart, room, global
+}
+
+```
+
+- Se definen varios types adicionales, (como `BudgetData` o `BudgetMetrics`), utilizados en distintas partes del código para el manejo de datos.
+
+```tsx title="/components/screens/BudgetScreen/BudgetScreen.tsx" 
+// BudgetData y BudgetMetrics son types declarados en el archivo types.d.ts el cual se conecta a los endpoits del backend que traen información propia del usuario.
+// este type cuenta con datos del usuario como: ID de la propiedad, analisis, métricas, etc
+
+type BudgetData = {
+    propertyID:string
+    name: string
+    lastAnalysis: OrderAnalysis[]
+    lastTotalAnalysis: CountryAnalysis
+}
+
+type BudgetMetrics = {
+    adr: MetricsInfo
+    occupancy: MetricsInfo
+    revenue: MetricsInfo
+    revPar: MetricsInfo
+}
+
+```
+
+## Funciones auxiliares
+- La función **`ParserCountryTable`** se encarga de procesar los datos del presupuesto y retornar una tabla con la información de ingresos por país.
+- La función **`convertRevenueTableAlpha3`** convierte los códigos de país en formato Alpha-2 a Alpha-3 para su posterior procesamiento y visualización en las tablas y en el mapa mundial.
+
+```tsx title="/components/screens/BudgetScreen/BudgetScreen.tsx" 
+function ParserCountryTable(metric: string, budgetData?: BudgetData) {
+    const RevenueTableMetric = budgetData?.lastAnalysis.find(ob => ob.orderBy === metric)
+    if (!RevenueTableMetric) return countryRevenue
+    
+    return RevenueTableMetric.analysis.map((ca)=> {
+        return {
+            country: ca.country,
+            value: ca.analysis.metrics[RevenueTableMetric.orderBy].now
+        }
+    })
+}
+
+const convertRevenueTableAlpha3 =(metric: string, budgetData?: BudgetData) =>  ParserCountryTable(metric, budgetData)?.map((item) => {
+    return {
+        country: alpha2ToAlpha3.whereAlpha2(item.country)?.alpha3 || item.country , 
+        value: item.value
+    }
+})
+
+const getSelectedDataForWorldMapDataType = (): { country: Alpha2Code; value: number }[] => {
+    if (worldMapDataType === 'Revenue') {
+        return convertRevenueTableAlpha3('revenue', budgetData) || []
+    }
+
+    if (worldMapDataType === 'Occupancy') {
+        return convertRevenueTableAlpha3('occupancy', budgetData) || []
+    }
+
+    return []
+}
+
+const ocuppancyToWorldMapData = getSelectedDataForWorldMapDataType()
+
+```
+## Lógica y componentes principales
+
+1. Se utiliza el hook **`useContext`** para acceder al contexto global de la aplicación. En este caso, se utiliza para acceder al contexto de usuario y obtener la información necesaria proveniente del backend.
+
+```tsx title="/components/screens/BudgetScreen/BudgetScreen.tsx" 
+const { backendServices, loading } = useContext(UserContext)
+
+```
+
+2. Se definen varios estados utilizando el hook **`useState`** para almacenar y actualizar datos en el componente (para los datos de BudgetData, filtros, checkboxes para manejar los gráficos, etc.).
+
+```tsx title="/components/screens/BudgetScreen/BudgetScreen.tsx" 
+const [worldMapDataType, setWorldMapDataType] = useState<ChartTitle>('Revenue')
+const [budgetData, setBudgetData] = useState<BudgetData | undefined>(undefined)
+const [actualFilters, setActualFilters] = useState<{ propertyName: string; formOfSale: 'dorm' | 'room' | 'global' | 'apart'; period: string }>({
+    propertyName: '',
+    formOfSale: 'global',
+    period: format(new Date(), 'yyyy-MM'),
+})
+const [checkboxFilters, setCheckboxFilters] = useState<Record<ChartPeriod, boolean>>({
+    Budget: true,
+    Now: true,
+    ToGo: true,
+    LastYear: true,
+})
+
+```
+
+3. Se utiliza el hook **`useEffect`** para realizar efectos secundarios en el componente, como:
+    - Llamar a la **API del backend** para obtener los datos del presupuesto
+    - Actualizar el estado de **checkboxFilters** cuando cambia **lastAnalysisMetrics**.
+    - Obtener los datos del presupuesto cuando cambian las propiedades del usuario.
+    - Enviar el código de autorización a través de **backendServices** cuando el componente se monta.
+
+```tsx title="/components/screens/BudgetScreen/BudgetScreen.tsx" 
+useEffect(() => {
+    setCheckboxFilters({
+        Budget: true,
+        Now: true,
+        ToGo: true,
+        LastYear: true,
+    })
+}, [lastAnalysisMetrics])
+
+const getPropertyIdFromName = (propertyName: string) => {
+    return userInfo?.properties.find((p) => p.name === propertyName)?.propertyID || ''
+}
+
+useEffect(() => {
+    if (!properties || !properties.length || !backendServices) return
+    const initialFilter = { propertyName: properties[0].name, formOfSale: 'global' as const, period: format(new Date(), 'yyyy-MM') }
+    setActualFilters(initialFilter)
+    backendServices
+        .getBudgetScreen({ propertyID: getPropertyIdFromName(properties[0].name), period: initialFilter.period, formOfSale: initialFilter.formOfSale, orderBy: 'revenue,occupancy'  })
+        .then((resultBudget) => {
+            setBudgetData(resultBudget?.data)
+        })
+}, [userInfo])
+
+const onFilterChange = (filters: { propertyName: string; formOfSale: 'dorm' | 'room' | 'global' | 'apart'; period: string }) => {
+    setActualFilters(filters)
+}
+
+
+const onFiltersApply = () => {
+    if (!backendServices) return
+    const { propertyName, period, formOfSale } = actualFilters
+    const propertyID = getPropertyIdFromName(propertyName)
+    backendServices?.getBudgetScreen({ propertyID, period, formOfSale, orderBy: 'revenue,occupancy'}).then((resultBudget) => {
+        setBudgetData(resultBudget?.data)
+    })
+}
+
+const urlAuthCode = new URLSearchParams(window.location.search);
+const code = urlAuthCode.get('code');
+
+useEffect(() => {
+    backendServices?.sendCloudBedsCodeBackend(code)
+}, [])
+
+```
+4. Se utiliza **`useIntl`** para acceder a la función **formatMessage** que proporciona traducciones de mensajes en el componente.
+
+```tsx title="/components/screens/BudgetScreen/BudgetScreen.tsx" 
+import { useIntl } from 'react-intl'
+
+const { formatMessage } = useIntl()
+
+```
+
+5. **`useIsDesktop`** y **`useIsMobile`** son funciones personalizadas (custom hooks) que se utilizan para determinar si el dispositivo en el que se está ejecutando la aplicación es de escritorio o móvil.
+
+```tsx title="/components/screens/BudgetScreen/BudgetScreen.tsx" 
+import { useIsDesktop, useIsMobile } from '../../../utils/hooks'
+
+const isDesktop = useIsDesktop()
+const isMobile = useIsMobile()
+
+// EJEMPLO
+ <div>
+    {isMobile && (
+        <div>
+            <FilterBreadcrumb />
+        </div>
+    )} 
+    {isDesktop && (
+        <div>
+            {periodTypes.map((type) => (
+                <FormControlLabel/>
+            ))}
+        </div>
+    )}
+</div>
+
+```
+
+

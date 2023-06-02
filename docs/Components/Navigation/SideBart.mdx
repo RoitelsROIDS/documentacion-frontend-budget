@@ -1,0 +1,107 @@
+# SideBar
+
+La barra lateral se utiliza para mostrar **opciones de navegación** y **funcionalidades** en una interfaz de usuario. La finalidad de este código es renderizar y controlar la apariencia y el comportamiento de la barra lateral, incluyendo la gestión de secciones abiertas/cerradas, la visualización de logotipos, la selección de propiedades y la visualización de enlaces de navegación.
+
+:::info
+
+1. El archivo **SideBar.tsx** cuenta con su propio archivo de estilos **SideBar.scss**
+Cualquier modificación en base a los diseños debe realizarse en el correspondiente archivo .scss y no desde los estilos de los componentes.
+
+2. El componente debe ser importado dentro del archivo **`NavigationContainer.tsx`**
+
+:::
+
+## Componentes de Material-UI
+El código hace uso de varios componentes de la biblioteca Material-UI. Estos componentes proporcionan la estructura y los estilos necesarios para construir la barra lateral y sus elementos. Se utilizan íconos y estilos predefinidos para mejorar la apariencia y la interacción de la barra lateral.
+
+```bash
+<Drawer> <List> <ListItem> <IconButton> <Typography> <Select>
+```
+
+## Manejo de secciones abiertas
+El estado ` openSections ` se utiliza para controlar qué secciones de la barra lateral están abiertas o cerradas. Cuando se hace clic en una sección, se actualiza el estado correspondiente en openSections. Esto permite mostrar u ocultar las subsecciones y proporciona una forma de expandir y contraer las opciones de navegación.
+El código utiliza la variable **open** para controlar la renderización condicional de elementos en la barra lateral. 
+Por ejemplo, se muestra el logotipo grande o pequeño dependiendo del estado de open. También se muestra o se ocultan las secciones de navegación en el sidebar. Esta renderización condicional permite adaptar la apariencia de la barra lateral según su estado de apertura o cierre.
+
+```tsx title="/components/navigation/SideBar.tsx" 
+const { onToggleOpen: onToggleSideBarOpen, open, business } = props
+const [openSections, setOpenSections] = useState<Record<string, boolean>>(
+    {},
+)
+
+const handleOpenSection = (id: string) => {
+    setOpenSections((state) => ({ ...state, [id]: !state[id] }))
+}
+
+const showLogoStyles: CSSProperties = {
+    visibility: 'visible',
+}
+
+const hideLogoStyles: CSSProperties = {
+    height: 0,
+    width: 0,
+    visibility: 'hidden',
+}
+```
+
+## Renderización de enlaces de navegación
+El código utiliza el array de rutas **ROUTES** para generar enlaces de navegación en la barra lateral. Cada ruta define una sección y sus subsecciones correspondientes. Al hacer clic en un enlace, se redirige al usuario a la ruta correspondiente. La renderización de los enlaces de navegación se realiza de forma dinámica, basándose en las secciones y subsecciones definidas en **ROUTES**.
+
+```bash
+import ROUTES from '../../constants/ROUTES'
+```
+
+```tsx title="/components/navigation/SideBar.tsx" 
+{ROUTES.map((section) => {
+    const isOpen = openSections?.[section.id]
+    const isActive = section.elements.some(
+        (elem) => location.pathname === '/' + elem.path,
+    )
+    return open ? (
+        <div
+            className={classnames('list-section', {
+                active: isActive,
+            })}
+        >
+            <ListItemButton onClick={() => handleOpenSection(section.id)}>
+                <ListItemIcon>
+                    {section.Icon}                                        
+                </ListItemIcon>
+                <ListItemText
+                    primary={section.sectionTitle}
+                />
+                {isOpen ? <ExpandLess /> : <ExpandMore />}
+            </ListItemButton>
+            {isOpen &&
+                section.elements.map((route) => (
+                    <ListItem
+                        key={route.title + '-' + route.path}
+                        disablePadding
+                        sx={{ display: 'block' }}
+                    >
+                        <Link to={route.path}>
+                            <ListItemButton>
+                                <ListItemText
+                                    primary={route.title}
+                                />
+                            </ListItemButton>
+                        </Link>
+                    </ListItem>
+                ))}
+        </div>
+    ) : (
+        <ListItemButton>
+            <Icon className="sidebar-button">
+                {section.Icon}
+            </Icon>
+        </ListItemButton>
+    )
+})}
+```
+
+:::caution ATENCIÓN
+
+Actualmente el archivo **SideBar.tsx** tiene partes de su **código comentado/deshabilitado**. En primeras instancias se había pensado la aplicación RoiBi con diferentes secciones/pantallas.
+El acceso a las diferentes secciones se realiza desde el sidebar y para conservar su funcionalidad (en caso de que RoiBi incorpore más secciones), se opto por comentar el código y no eliminarlo.
+
+:::
